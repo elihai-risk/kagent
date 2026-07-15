@@ -1,4 +1,7 @@
 {{- if .Values.ui.ingress.enabled }}
+{{- if not .Values.ui.ingress.hosts }}
+{{- fail "ui.ingress.hosts must contain at least one host when ui.ingress.enabled is true" }}
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -15,7 +18,7 @@ metadata:
   {{- end }}
 spec:
   {{- with .Values.ui.ingress.className }}
-  ingressClassName: {{ . }}
+  ingressClassName: {{ . | quote }}
   {{- end }}
   {{- with .Values.ui.ingress.tls }}
   tls:
@@ -26,14 +29,15 @@ spec:
     - host: {{ .host | quote }}
       http:
         paths:
-          {{- range .paths }}
-          - path: {{ .path }}
+          {{- range (required "each ui.ingress.hosts entry needs a non-empty paths list" .paths) }}
+          {{- $backend := .backend | default dict }}
+          - path: {{ .path | quote }}
             pathType: {{ .pathType | default "Prefix" }}
             backend:
               service:
-                name: {{ (.backend).name | default (printf "%s-ui" (include "kagent.fullname" $)) }}
+                name: {{ $backend.name | default (printf "%s-ui" (include "kagent.fullname" $)) }}
                 port:
-                  number: {{ (.backend).port | default $.Values.ui.service.ports.port }}
+                  number: {{ $backend.port | default $.Values.ui.service.ports.port }}
           {{- end }}
     {{- end }}
 {{- end }}

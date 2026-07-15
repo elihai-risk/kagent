@@ -79,3 +79,23 @@ tests:
       - equal:
           path: spec.tls[0].secretName
           value: kagent-tls
+
+  - it: should fail when enabled without hosts
+    set:
+      ui:
+        ingress:
+          enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "ui.ingress.hosts must contain at least one host"
+
+  - it: should fail when a host has no paths
+    set:
+      ui:
+        ingress:
+          enabled: true
+          hosts:
+            - host: kagent.example.com
+    asserts:
+      - failedTemplate:
+          errorPattern: "non-empty paths list"
